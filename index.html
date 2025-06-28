@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flugrechner Menü</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 500px; margin: 20px auto; padding: 20px; background: #f9f9f9; }
+  h2 { text-align: center; }
+  label { display: block; margin-top: 15px; font-weight: bold; }
+  select, input[type="number"] { width: 100%; padding: 8px; font-size: 1rem; margin-top: 5px; }
+  button { margin-top: 15px; padding: 10px; width: 100%; font-size: 1.1rem; cursor: pointer; border: none; background-color: #007bff; color: white; border-radius: 5px; }
+  button:hover { background-color: #0056b3; }
+  .result { margin-top: 25px; padding: 15px; background: #e3e3e3; border-radius: 8px; font-size: 1.1rem; }
+  .section { display: none; }
+</style>
+</head>
+<body>
+
+<h2>Flugrechner</h2>
+
+<label for="toolSelect">Wähle ein Tool</label>
+<select id="toolSelect" onchange="switchTool()">
+  <option value="descent">Descent Calculator</option>
+  <option value="v1">V1 Speed Rechner</option>
+  <option value="landing">Landing Speed Rechner</option>
+</select>
+
+<!-- Descent Calculator Section -->
+<div id="descent" class="section" style="display:block;">
+  <label for="aircraft">Flugzeugtyp</label>
+  <select id="aircraft">
+    <optgroup label="Boeing">
+      <option value="B737">737</option>
+      <option value="B747">747</option>
+      <option value="B767">767</option>
+      <option value="B777">777</option>
+      <option value="B787">787</option>
+    </optgroup>
+    <optgroup label="Airbus">
+      <option value="A320">A320</option>
+      <option value="A330">A330</option>
+      <option value="A340">A340</option>
+      <option value="A350">A350</option>
+      <option value="A380">A380</option>
+    </optgroup>
+    <optgroup label="Embraer">
+      <option value="E190">E190</option>
+      <option value="E195">E195</option>
+    </optgroup>
+  </select>
+
+  <label for="ias">Airspeed (IAS) in Knoten</label>
+  <input type="number" id="ias" placeholder="z.B. 280">
+
+  <label for="currentAltitude">Aktuelle Höhe (ft)</label>
+  <input type="number" id="currentAltitude" placeholder="z.B. 35000">
+
+  <label for="targetAltitude">Gewünschte Höhe (ft)</label>
+  <input type="number" id="targetAltitude" placeholder="z.B. 3000">
+
+  <button onclick="calculateDescent()">Berechnen</button>
+  <button onclick="resetFields()">Reset</button>
+
+  <div class="result" id="resultDescent" style="display:none;"></div>
+</div>
+
+<!-- V1 Calculator Section -->
+<div id="v1" class="section">
+  <label for="weight">Gewicht (t)</label>
+  <input type="number" id="weight" placeholder="z.B. 70">
+
+  <label for="runway">Runway Conditions (trocken=1, nass=0.85)</label>
+  <input type="number" id="runway" placeholder="z.B. 1 oder 0.85">
+
+  <button onclick="calculateV1()">Berechnen</button>
+  <div class="result" id="resultV1" style="display:none;"></div>
+</div>
+
+<!-- Landing Speed Calculator Section -->
+<div id="landing" class="section">
+  <label for="landingWeight">Landungsgewicht (t)</label>
+  <input type="number" id="landingWeight" placeholder="z.B. 65">
+
+  <button onclick="calculateLanding()">Berechnen</button>
+  <div class="result" id="resultLanding" style="display:none;"></div>
+</div>
+
+<script>
+function switchTool() {
+  const sections = ['descent', 'v1', 'landing'];
+  const selected = document.getElementById('toolSelect').value;
+  sections.forEach(id => {
+    document.getElementById(id).style.display = id === selected ? 'block' : 'none';
+  });
+}
+
+function calculateDescent() {
+  const aircraft = document.getElementById('aircraft').value;
+  const ias = parseFloat(document.getElementById('ias').value);
+  const currentAlt = parseFloat(document.getElementById('currentAltitude').value);
+  const targetAlt = parseFloat(document.getElementById('targetAltitude').value);
+
+  if (!aircraft || isNaN(ias) || isNaN(currentAlt) || isNaN(targetAlt) || targetAlt >= currentAlt) {
+    alert('Bitte alle Felder korrekt ausfüllen und Flugzeugtyp wählen.');
+    return;
+  }
+
+  const gs = ias * (1 + (currentAlt / 1000) * 0.02);
+  const altitudeToLose = currentAlt - targetAlt;
+  const tod = altitudeToLose / 300;
+  const vs = gs * 5;
+
+  const resultDiv = document.getElementById('resultDescent');
+  resultDiv.style.display = 'block';
+  resultDiv.innerHTML = `Flugzeug: <strong>${aircraft}</strong><br>
+    Sinkrate: <strong>${vs.toFixed(0)} ft/min</strong><br>
+    Top of Descent: <strong>${tod.toFixed(1)} NM</strong><br>
+    Groundspeed: <strong>${gs.toFixed(1)} kt</strong>`;
+}
+
+function resetFields() {
+  ['aircraft','ias','currentAltitude','targetAltitude'].forEach(id => {
+    document.getElementById(id).value = id === 'aircraft' ? '' : '';
+  });
+  document.getElementById('resultDescent').style.display = 'none';
+}
+
+function calculateV1() {
+  const weight = parseFloat(document.getElementById('weight').value);
+  const runway = parseFloat(document.getElementById('runway').value);
+  if (isNaN(weight) || isNaN(runway)) {
+    alert('Bitte Gewicht und Startbedingungen eingeben.');
+    return;
+  }
+  const v1 = 130 + (weight - 60) * 0.5 * runway;
+  const result = document.getElementById('resultV1');
+  result.style.display = 'block';
+  result.innerHTML = `Geschätzte V1: <strong>${v1.toFixed(0)} kt</strong>`;
+}
+
+function calculateLanding() {
+  const weight = parseFloat(document.getElementById('landingWeight').value);
+  if (isNaN(weight)) {
+    alert('Bitte Landegewicht eingeben.');
+    return;
+  }
+  const vref = 125 + (weight - 60) * 0.4;
+  const result = document.getElementById('resultLanding');
+  result.style.display = 'block';
+  result.innerHTML = `Geschätzte Landegeschwindigkeit: <strong>${vref.toFixed(0)} kt</strong>`;
+}
+</script>
+
+</body>
+</html>
